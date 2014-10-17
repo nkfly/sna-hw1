@@ -33,25 +33,36 @@ class MyMultiPlayerLTModel():
 
 	def export(self, my_nodes_file):
 		with open(my_nodes_file, 'w') as f:
+			print(self.inactivated_num, end='\n', file=f)
+			print(" ".join([str(n) for n in self.total_activated_nodes[0]] ), sep='\t', end='\n', file=f)
+			print(" ".join([str(n) for n in self.total_activated_nodes[1]] ), sep='\t', end='\n', file=f)
 			for n in self.g.nodes():
-				print(n, self.g.node[n]['owner'],self.g.node[n]['status'],self.g.node[n]['threshold'],self.g.node[n]['energy'][0],self.g.node[n]['energy'][1],sep='\t',end='\n', file=f)
+				print(n, self.g.node[n]['threshold'],self.g.node[n]['status'],self.g.node[n]['owner'],self.g.node[n]['energy'][0],self.g.node[n]['energy'][1],sep='\t',end='\n', file=f)
 
 	def store(self, my_nodes_file, edges_file, player_num):
 		self.player_num = player_num
 		self.g = None
-		self.g = nx.DiGraph()
+		self.store_graph(my_nodes_file, edges_file)
+		self.activated_nodes = None
+		# to store the selected nodes (of all players) in one round
+		self.selected_nodes = None
+		self.init_round()
 
 	def store_graph(self, my_nodes_file, edges_file):
 		self.g = nx.DiGraph()
 		# read nodes file
 		with open(my_nodes_file, 'r') as f:
+			self.inactivated_num = int(f.readline().strip().split()[0])
+			self.total_activated_nodes = [ [int(n) for n in f.readline().strip().split()]  ,  [int(n) for n in f.readline().strip().split()]]
 			for line in f:
 				entry = line.strip().split('\t')
 				assert len(entry) == 6
 				n = int(entry[0])
 				t = float(entry[1])
-				self.g.add_node(n, threshold = t, status='inactivated', 
-						owner=None, energy=[0.0 for i in range(0, self.player_num)])
+				s = entry[2]
+				o = entry[3]
+				e = [float(entry[4]), float(entry[5])]
+				self.g.add_node(n, threshold = t, status=s, owner=o, energy=e)
 				
 		# read edges file 
 		self.read_edge(edges_file)
