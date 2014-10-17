@@ -119,6 +119,7 @@ if __name__ == '__main__':
 
         # run linear threshold once
         print('Propagate once ...', end='',file=sys.stderr)
+        
         model.propagate()
         update_status_file(status_file, model.get_activated_nodes(player_id=0))
         update_status_file(status_file, model.get_activated_nodes(player_id=1))

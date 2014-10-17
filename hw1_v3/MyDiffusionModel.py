@@ -126,6 +126,46 @@ class MyMultiPlayerLTModel():
 		self.selected_nodes = list()
 		self.activated_nodes = [list() for i in range(0,self.player_num)]
 
+
+	def simulate_propagate(self, k_layer):
+		layer_to_activated_node_list = []
+		copy_g = self.get_copy_graph()
+		visiting_nodes_set = set(self.selected_nodes)
+		while len(visiting_nodes_set) > 0:
+			k_layer = k_layer -1
+			if k_layer < 0 :
+				break
+
+
+			new_activated_nodes_set = set()
+			# propagate the influence
+			for n1 in visiting_nodes_set:
+				owner = copy_g.node[n1]['owner']
+				for n2 in copy_g.successors(n1):
+					if copy_g.node[n2]['status'] == 'inactivated':
+						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
+						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
+							new_activated_nodes_set.add(n2)
+			
+			# determine the owner of the activated node
+			for n in new_activated_nodes_set:
+				max_energy = -1.0
+				for p in range(0, self.player_num):
+					energy = copy_g.node[n]['energy'][p]
+					if energy >= max_energy:
+						owner = p
+						max_energy = energy
+
+				copy_g.node[n]['owner'] = owner
+				copy_g.node[n]['status'] = 'activated'
+			
+			
+
+			# update the nodes set to visit
+			visiting_nodes_set = new_activated_nodes_set
+			layer_to_activated_node_list.append(new_activated_nodes_set)
+		return layer_to_activated_node_list
+
 	# propagate this round
 	def propagate(self):
 		visiting_nodes_set = set(self.selected_nodes)
@@ -216,3 +256,26 @@ class MyMultiPlayerLTModel():
 				tv[i]=tv[i]+1
 				ddv[i] = graph.degree(i) - 2 * tv[i] - ( graph.degree(i) - tv[i] ) * tv[i]
 		return list
+
+	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes):
+		candidate_list = list()
+
+		for n1 in simulate_activated_nodes:
+			# sum over all influence value of out-edges
+			sum_of_out_influence = 0.0
+			for n2 in self.g.successors(n1):
+				if self.g.node[n2]['status'] == 'inactivated':
+					sum_of_out_influence += self.g.edge[n1][n2]['influence']
+			candidate_list.append((n1, sum_of_out_influence))
+
+		candidate_list.sort(key = lambda x: x[1], reverse = True)
+
+		# store the selected nodes into return_nodes_list 
+		return_num = min(num_of_nodes, len(candidate_list))
+		return_nodes_list = list()
+		for i in range(0, return_num):
+			return_nodes_list.append(candidate_list[i][0])
+
+		return return_nodes_list
+	def get_graph_nodes(self):
+		return self.g.nodes(data=True)
