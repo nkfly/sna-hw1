@@ -1,5 +1,6 @@
 import sys
 import MyDiffusionModel
+import random
 
 # round is 1-based
 def get_round_and_enemy_latestest_select_nodes(player_id,status_file):
@@ -16,6 +17,10 @@ def get_round_and_enemy_latestest_select_nodes(player_id,status_file):
 	else:
 		return int((line_count-1)/4)+1, enemy_latest_select_nodes
 
+def write_selected_nodes(filename, select_nodes):
+	with open(filename, 'w') as f:
+		print(" ".join([str(n) for n in select_nodes]),end='\n', file=f)
+
 
 
 # main function 
@@ -30,14 +35,20 @@ if __name__ == '__main__':
 	if player_id == 1:
 		print(player_id)
 	else :
-		r, select_nodes = get_round_and_enemy_latestest_select_nodes(player_id,status_file)
-		print(select_nodes,end='\n')
+		r, enemy_select_nodes = get_round_and_enemy_latestest_select_nodes(player_id,status_file)
+
 		model = MyDiffusionModel.MyMultiPlayerLTModel()
 		if r == 1:
 			model.original_init(nodes_file, edges_file, player_num = 2)
 		else:
 			model.store('text.txt', edges_file, player_num = 2)
-		model.select_nodes(select_nodes, player_id = 1)
+		model.select_nodes(enemy_select_nodes, player_id = 0)
+		
+		random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
+		print(random_select_nodes, end='\n')
+		model.select_nodes(random_select_nodes, player_id = 1)
+		write_selected_nodes('selected_nodes.txt', random_select_nodes)
+
 		model.propagate()
 		model.export('text.txt')
 		

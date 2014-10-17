@@ -165,6 +165,9 @@ class MyMultiPlayerLTModel():
 
 
 	# get activated nodes of certain player in that round
+	def get_nodes_num(self):
+		return len(self.g.nodes())
+
 	def get_activated_nodes(self, player_id):
 		assert player_id < self.player_num
 		return self.activated_nodes[player_id]
