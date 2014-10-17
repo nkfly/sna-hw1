@@ -43,8 +43,8 @@ if __name__ == '__main__':
 		else:
 			model.store('text.txt', edges_file, player_num = 2)
 		model.select_nodes(enemy_select_nodes, player_id = 0)
-		
-		random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
+		random_select_nodes = model.DegreediscountGreedy(model.get_copy_graph(),nodes_num_per_iter)
+		#random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
 		print(random_select_nodes, end='\n')
 		model.select_nodes(random_select_nodes, player_id = 1)
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
