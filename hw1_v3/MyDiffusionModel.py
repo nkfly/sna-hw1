@@ -31,11 +31,44 @@ class MyMultiPlayerLTModel():
 
 		self.init_round()
 
-	def export(self, filename):
-		print('----------Hello----------', file=sys.stderr)
-		with open(filename, 'w') as f:
+	def export(self, my_nodes_file):
+		with open(my_nodes_file, 'w') as f:
 			for n in self.g.nodes():
-				print(n, self.g.node[n]['owner'],self.g.node[n]['threshold'],sep='\t',end='\n', file=f)
+				print(n, self.g.node[n]['owner'],self.g.node[n]['status'],self.g.node[n]['threshold'],self.g.node[n]['energy'][0],self.g.node[n]['energy'][1],sep='\t',end='\n', file=f)
+
+	def store(self, my_nodes_file, edges_file, player_num):
+		self.player_num = player_num
+		self.g = None
+		self.g = nx.DiGraph()
+
+	def store_graph(self, my_nodes_file, edges_file):
+		self.g = nx.DiGraph()
+		# read nodes file
+		with open(my_nodes_file, 'r') as f:
+			for line in f:
+				entry = line.strip().split('\t')
+				assert len(entry) == 6
+				n = int(entry[0])
+				t = float(entry[1])
+				self.g.add_node(n, threshold = t, status='inactivated', 
+						owner=None, energy=[0.0 for i in range(0, self.player_num)])
+				
+		# read edges file 
+		self.read_edge(edges_file)
+
+	def read_edge(self, edges_file):
+		# read edges file 
+		with open(edges_file, 'r') as f:
+			line = f.readline().strip().split()
+			assert line[1] == 'Directed' 
+			f.readline() 
+			for line in f:
+				entry = line.strip().split(' ')
+				assert len(entry) == 3
+				n1 = int(entry[0])
+				n2 = int(entry[1])
+				inf = float(entry[2])
+				self.g.add_edge(n1, n2, influence = inf)
 
 	# read graph from file
 	def read_graph(self,nodes_file, edges_file):
@@ -52,17 +85,7 @@ class MyMultiPlayerLTModel():
 						owner=None, energy=[0.0 for i in range(0, self.player_num)])
 				
 		# read edges file 
-		with open(edges_file, 'r') as f:
-			line = f.readline().strip().split()
-			assert line[1] == 'Directed' 
-			f.readline() 
-			for line in f:
-				entry = line.strip().split(' ')
-				assert len(entry) == 3
-				n1 = int(entry[0])
-				n2 = int(entry[1])
-				inf = float(entry[2])
-				self.g.add_edge(n1, n2, influence = inf)
+		self.read_edge(edges_file)
 
 	# Let player select the nodes
 	def select_nodes(self, nodes_list, player_id):
