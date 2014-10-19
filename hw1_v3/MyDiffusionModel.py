@@ -79,8 +79,9 @@ class MyMultiPlayerLTModel():
 				assert len(entry) == 3
 				n1 = int(entry[0])
 				n2 = int(entry[1])
-				inf = float(entry[2])
-				self.g.add_edge(n1, n2, influence = inf)
+				if (self.g.has_node(n1) and self.g.has_node(n2)):
+					inf = float(entry[2])
+					self.g.add_edge(n1, n2, influence = inf)
 
 	# read graph from file
 	def read_graph(self,nodes_file, edges_file):
@@ -98,6 +99,7 @@ class MyMultiPlayerLTModel():
 				
 		# read edges file 
 		self.read_edge(edges_file)
+
 
 	# Let player select the nodes
 	def select_nodes(self, nodes_list, player_id):
@@ -127,22 +129,41 @@ class MyMultiPlayerLTModel():
 		self.activated_nodes = [list() for i in range(0,self.player_num)]
 
 
-	def simulate_propagate(self, k_layer):
-		layer_to_activated_node_list = []
-		copy_g = self.get_copy_graph()
-		visiting_nodes_set = set(self.selected_nodes)
+	def simulate_select_nodes(self, copy_g, nodes_list, player_id):
+		if type(nodes_list) is not list:
+			return None
+		
+		# since player could select invalid (status: selected/activated) nodes
+		# we create a list to store the actual selected nodes
+		actual_selected_nodes = list()
+		for n in nodes_list:
+			if not copy_g.has_node(n):
+				return None
+			if copy_g.node[n]['status'] == 'inactivated':
+				copy_g.node[n]['status'] = 'selected'
+				copy_g.node[n]['owner'] = player_id
+				actual_selected_nodes.append(n)
+		
+		
+		return actual_selected_nodes
+
+
+	def simulate_propagate(self, copy_g, selected_nodes,k_layer):
+		layer_to_activated_node_list = []		 
+		visiting_nodes_set = set(selected_nodes)
+		affected_nodes = dict()
 		while len(visiting_nodes_set) > 0:
 			k_layer = k_layer -1
 			if k_layer < 0 :
 				break
-
-
 			new_activated_nodes_set = set()
 			# propagate the influence
 			for n1 in visiting_nodes_set:
 				owner = copy_g.node[n1]['owner']
 				for n2 in copy_g.successors(n1):
 					if copy_g.node[n2]['status'] == 'inactivated':
+						if n2 not in affected_nodes:
+							affected_nodes[n2] = copy_g.node[n2]
 						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
 						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
 							new_activated_nodes_set.add(n2)
@@ -164,7 +185,7 @@ class MyMultiPlayerLTModel():
 			# update the nodes set to visit
 			visiting_nodes_set = new_activated_nodes_set
 			layer_to_activated_node_list.append(new_activated_nodes_set)
-		return layer_to_activated_node_list
+		return layer_to_activated_node_list, affected_nodes
 
 	# propagate this round
 	def propagate(self):
@@ -225,6 +246,15 @@ class MyMultiPlayerLTModel():
 			print(player_id+1, len(nodes_list), sep='\t') 
 		print('-------------------------------', file=sys.stderr)
 
+	def remove_activated_nodes(self):
+		for n in self.selected_nodes:
+			self.g.remove_node(n)
+		for n in self.activated_nodes[0]:
+			self.g.remove_node(n)
+		for n in self.activated_nodes[1]:
+			self.g.remove_node(n)
+
+
 	# return a copy of graph
 	def get_copy_graph(self):
 		return self.g.copy()
@@ -257,6 +287,52 @@ class MyMultiPlayerLTModel():
 				ddv[i] = graph.degree(i) - 2 * tv[i] - ( graph.degree(i) - tv[i] ) * tv[i]
 		return list
 
+
+	def reset(self,copy_g, select_nodes, affected_nodes):
+		for n in select_nodes:
+			copy_g.node[n]['status'] = 'inactivated'
+			copy_g.node[n]['owner'] = None
+		for n in affected_nodes:
+			copy_g.node[n] = affected_nodes[n]
+
+
+	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+		for n in enemy_selected_nodes:
+			copy_g.node[n]['status'] = 'activated'
+			if n in simulate_activated_nodes:
+				simulate_activated_nodes.remove(n)
+
+		return_nodes_list = list()
+		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+		
+		for i in range(num_of_nodes):
+			candidate_list = list()
+			for n1 in simulate_activated_nodes:
+				try_set = list(return_nodes_list)
+				try_set.append(n1)
+
+				self.simulate_select_nodes(copy_g, try_set, 1)
+				layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set,1000)
+				all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
+				my_activated_node = 0
+				enemy_activated_node = 0
+				for a_c in all_layer_activated_nodes:
+					if copy_g.node[a_c]['owner'] == 0:
+						enemy_activated_node = enemy_activated_node + 1
+					else:
+						my_activated_node = my_activated_node + 1
+
+				self.reset(copy_g,try_set,affected_nodes)
+
+				candidate_list.append((n1, enemy_activated_node - my_activated_node))
+
+			candidate_list.sort(key = lambda x: x[1], reverse = False)
+
+			simulate_activated_nodes.remove(candidate_list[0][0])
+			return_nodes_list.append(candidate_list[0][0])
+
+		return return_nodes_list
+
 	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes):
 		candidate_list = list()
 
@@ -278,4 +354,6 @@ class MyMultiPlayerLTModel():
 
 		return return_nodes_list
 	def get_graph_nodes(self):
-		return self.g.nodes(data=True)
+		return self.g.nodes()
+	def get_selected_nodes(self):
+		return self.selected_nodes
