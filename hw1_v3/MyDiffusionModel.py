@@ -268,7 +268,7 @@ class MyMultiPlayerLTModel():
 	def get_copy_graph(self):
 		return self.g.copy()
 	# implement by Me
-	def DegreediscountGreedy(self, graph,k):
+	def DegreediscountGreedy(self, graph,simulate_activated_nodes,k):
 		list=[]
 		ddv={}
 		tv={}
@@ -338,14 +338,14 @@ class MyMultiPlayerLTModel():
 
 		return return_nodes_list
 
-	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes,giant_connected_component):
+	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes):
 		candidate_list = list()
 
 		for n1 in simulate_activated_nodes:
 			# sum over all influence value of out-edges
 			sum_of_out_influence = 0.0
 			for n2 in self.g.successors(n1):
-				if self.g.node[n2]['status'] == 'inactivated' and n1 in giant_connected_component:
+				if self.g.node[n2]['status'] == 'inactivated':
 					sum_of_out_influence += self.g.edge[n1][n2]['influence']
 			candidate_list.append((n1, sum_of_out_influence))
 
@@ -359,14 +359,20 @@ class MyMultiPlayerLTModel():
 			return_nodes_list.append(candidate_list[i][0])
 
 		return return_nodes_list
-	def mix_heuristic(self, simulate_activated_nodes,num_of_nodes,giant_connected_component):
+	def mix_heuristic(self, enemy_selected_nodes, simulate_activated_nodes,num_of_nodes):
 		return_nodes_list=list()
-		first=self.heuristic_max_weight(simulate_activated_nodes,int(num_of_nodes/2),giant_connected_component)
+		#first=self.heuristic_max_weight(simulate_activated_nodes,int(4))
 		new_g = self.get_copy_graph()
+		first=self.DegreediscountGreedy(new_g,simulate_activated_nodes, 6)
+		true_first = list()
 		for n in first:
-			new_g.node[n]['status'] = 'activate'
-		second = self.DegreediscountGreedy(new_g,int(num_of_nodes/2))
-		for n in first:
+			if n not in enemy_selected_nodes:
+				simulate_activated_nodes.discard(n)
+				num_of_nodes = num_of_nodes - 1
+				true_first.append(n)
+		#second = self.DegreediscountGreedy(new_g,simulate_activated_nodes, int(6))
+		second = self.heuristic_max_weight(simulate_activated_nodes,num_of_nodes)
+		for n in true_first:
 			return_nodes_list.append(n)
 		for n in second:
 			return_nodes_list.append(n)
