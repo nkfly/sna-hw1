@@ -2,6 +2,7 @@ import sys
 import MyDiffusionModel
 import random
 
+
 # round is 1-based
 def get_round_and_enemy_latestest_select_nodes(player_id,status_file):
 	line_count = 0
