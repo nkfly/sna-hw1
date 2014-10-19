@@ -299,15 +299,17 @@ class MyMultiPlayerLTModel():
 	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
 		
 		return_nodes_list = list()
-		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-
+		
 		for i in range(num_of_nodes):
 			candidate_list = list()
 			for n1 in simulate_activated_nodes:
 				try_set = list(return_nodes_list)
 				try_set.append(n1)
-
+				
+				self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
 				self.simulate_select_nodes(copy_g, try_set, 1)
+
+
 				layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set,1000)
 				all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
 				my_activated_node = 0
@@ -316,12 +318,10 @@ class MyMultiPlayerLTModel():
 						my_activated_node = my_activated_node + 1
 
 				self.reset(copy_g,try_set,affected_nodes)
-
-				candidate_list.append((n1, my_activated_node))
+				candidate_list.append((n1, my_activated_node ))
 
 
 			candidate_list.sort(key = lambda x: x[1], reverse = True)
-			#print(candidate_list,end='\n')
 
 			simulate_activated_nodes.remove(candidate_list[0][0])
 			return_nodes_list.append(candidate_list[0][0])
