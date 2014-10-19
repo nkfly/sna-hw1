@@ -164,6 +164,7 @@ class MyMultiPlayerLTModel():
 					if copy_g.node[n2]['status'] == 'inactivated':
 						if n2 not in affected_nodes:
 							affected_nodes[n2] = copy_g.node[n2]
+
 						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
 						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
 							new_activated_nodes_set.add(n2)
@@ -254,6 +255,14 @@ class MyMultiPlayerLTModel():
 		for n in self.activated_nodes[1]:
 			self.g.remove_node(n)
 
+	def keep_giant_component(self):
+		giant_connected_component_size = 0
+		giant_connected_component = None
+		for g in nx.weakly_connected_components(self.g):
+			if len(g) > giant_connected_component_size:
+				giant_connected_component_size = len(g)
+				giant_connected_component = g
+		self.g = self.g.subgraph(giant_connected_component)
 
 	# return a copy of graph
 	def get_copy_graph(self):
@@ -296,6 +305,7 @@ class MyMultiPlayerLTModel():
 			copy_g.node[n] = affected_nodes[n]
 
 
+
 	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
 		
 		return_nodes_list = list()
@@ -328,14 +338,14 @@ class MyMultiPlayerLTModel():
 
 		return return_nodes_list
 
-	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes):
+	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes,giant_connected_component):
 		candidate_list = list()
 
 		for n1 in simulate_activated_nodes:
 			# sum over all influence value of out-edges
 			sum_of_out_influence = 0.0
 			for n2 in self.g.successors(n1):
-				if self.g.node[n2]['status'] == 'inactivated':
+				if self.g.node[n2]['status'] == 'inactivated' and n1 in giant_connected_component:
 					sum_of_out_influence += self.g.edge[n1][n2]['influence']
 			candidate_list.append((n1, sum_of_out_influence))
 
@@ -344,13 +354,14 @@ class MyMultiPlayerLTModel():
 		# store the selected nodes into return_nodes_list 
 		return_num = min(num_of_nodes, len(candidate_list))
 		return_nodes_list = list()
+
 		for i in range(0, return_num):
 			return_nodes_list.append(candidate_list[i][0])
 
 		return return_nodes_list
-	def mix_heuristic(self, simulate_activated_nodes,num_of_nodes):
+	def mix_heuristic(self, simulate_activated_nodes,num_of_nodes,giant_connected_component):
 		return_nodes_list=list()
-		first=self.heuristic_max_weight(simulate_activated_nodes,int(num_of_nodes/2))
+		first=self.heuristic_max_weight(simulate_activated_nodes,int(num_of_nodes/2),giant_connected_component)
 		new_g = self.get_copy_graph()
 		for n in first:
 			new_g.node[n]['status'] = 'activate'
@@ -365,3 +376,40 @@ class MyMultiPlayerLTModel():
 		return self.g.nodes()
 	def get_selected_nodes(self):
 		return self.selected_nodes
+
+
+	def heuristic_greedy_c2(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+		
+		return_nodes_list = list()
+		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+		for i in range(int(num_of_nodes/2)):
+			candidate_list = list()
+			for n1 in simulate_activated_nodes:
+				for n2 in simulate_activated_nodes:
+					if n2 < n1:
+						continue
+
+					try_set = list(return_nodes_list)
+					try_set.append(n1)
+					try_set.append(n2)
+					
+					self.simulate_select_nodes(copy_g, try_set, 1)
+
+					layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set,1000)
+					all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
+					my_activated_node = 0
+					for a_c in all_layer_activated_nodes:
+						if copy_g.node[a_c]['owner'] == 1:
+							my_activated_node = my_activated_node + 1
+
+					self.reset(copy_g,try_set,affected_nodes)
+					candidate_list.append(((n1,n2), my_activated_node ))
+
+			candidate_list.sort(key = lambda x: x[1], reverse = True)
+
+			simulate_activated_nodes.remove(candidate_list[0][0][0])
+			simulate_activated_nodes.remove(candidate_list[0][0][1])
+			return_nodes_list.append(candidate_list[0][0][0])
+			return_nodes_list.append(candidate_list[0][0][1])
+
+		return return_nodes_list

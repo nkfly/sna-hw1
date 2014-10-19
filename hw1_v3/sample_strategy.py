@@ -1,6 +1,7 @@
 import sys
 import MyDiffusionModel
 import random
+import networkx as nx
 
 
 # round is 1-based
@@ -23,6 +24,15 @@ def write_selected_nodes(filename, select_nodes):
 		print(" ".join([str(n) for n in select_nodes]),end='\n', file=f)
 
 
+def get_giant_connected_component(copy_g):
+	giant_connected_component_size = 0
+	giant_connected_component = None
+	for g in nx.weakly_connected_components(copy_g):
+		if len(g) > giant_connected_component_size:
+			giant_connected_component_size = len(g)
+			giant_connected_component = g
+	return set(giant_connected_component)
+
 
 # main function 
 if __name__ == '__main__':
@@ -44,6 +54,9 @@ if __name__ == '__main__':
 		else:
 			model.store('text.txt', edges_file, player_num = 2)
 		copy_g = model.get_copy_graph()
+		giant_connected_component = get_giant_connected_component(copy_g)
+		
+		
 		model.simulate_select_nodes(copy_g,enemy_select_nodes, player_id = 0)
 		#model.select_nodes(enemy_select_nodes, player_id = 0)
 
@@ -59,7 +72,7 @@ if __name__ == '__main__':
 		if r == 1:
 			random_select_nodes = model.heuristic_greedy(all_layer_activated_nodes, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
 		else : 
-			random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
+			random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter,giant_connected_component)
 		#random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
 		#random_select_nodes = model.DegreediscountGreedy(model.get_copy_graph(),nodes_num_per_iter)
 		#random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
@@ -74,5 +87,6 @@ if __name__ == '__main__':
 
 		model.propagate()
 		model.remove_activated_nodes()
+		#model.keep_giant_component()
 		model.export('text.txt')
 		
