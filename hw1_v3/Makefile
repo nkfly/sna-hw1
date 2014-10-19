@@ -1,8 +1,8 @@
 # This Makefile is the template for you to edit. You have to modify it so that we can run your strategy.
 # Please note that all parameters could change.
 PLAYER_ID=2
-NODES_FILE=./networks/egofb_lt_nodes.txt
-EDGES_FILE=./networks/egofb_lt_edges.txt
+NODES_FILE=./networks/hepth_lt_nodes.txt
+EDGES_FILE=./networks/hepth_lt_edges.txt
 STATUS_FILE=game_status.txt
 NODES_NUM_PER_ITER=10
 SELECTED_NODES_FILE=selected_nodes.txt

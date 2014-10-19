@@ -363,7 +363,7 @@ class MyMultiPlayerLTModel():
 		return_nodes_list=list()
 		#first=self.heuristic_max_weight(simulate_activated_nodes,int(4))
 		new_g = self.get_copy_graph()
-		first=self.DegreediscountGreedy(new_g,simulate_activated_nodes, 6)
+		first=self.DegreediscountGreedy(new_g,simulate_activated_nodes, 3)
 		true_first = list()
 		for n in first:
 			if n not in enemy_selected_nodes:

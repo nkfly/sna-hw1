@@ -71,6 +71,8 @@ if __name__ == '__main__':
 		
 		for n in remove_node_list:
 			all_layer_activated_nodes.remove(n)
+		for n in enemy_select_nodes:
+			giant_connected_component.discard(n)
 
 		#print(len(all_layer_activated_nodes),all_layer_activated_nodes,sep='\t',end='\n')
 		#all_layer_activated_nodes = set.union(layer_to_activated_node_list[0], layer_to_activated_node_list[1],layer_to_activated_node_list[2])
@@ -78,10 +80,12 @@ if __name__ == '__main__':
 		#print(all_layer_activated_nodes, end='\n')
 		#print(model.get_graph_nodes(), end='\n')
 		#random_select_nodes = model.heuristic_max_weight(all_layer_activated_nodes,nodes_num_per_iter)
+
 		if r == 1:
 			random_select_nodes = model.heuristic_greedy(all_layer_activated_nodes, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
+			#random_select_nodes = model.heuristic_greedy(set(layer_to_activated_node_list[0]), model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
 		else : 
-			random_select_nodes = model.mix_heuristic(enemy_select_nodes,all_layer_activated_nodes,nodes_num_per_iter)
+			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
 		#random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
 		#random_select_nodes = model.DegreediscountGreedy(model.get_copy_graph(),nodes_num_per_iter)
 		#random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
