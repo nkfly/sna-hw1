@@ -301,10 +301,9 @@ class MyMultiPlayerLTModel():
 			copy_g.node[n]['status'] = 'activated'
 			if n in simulate_activated_nodes:
 				simulate_activated_nodes.remove(n)
-
 		return_nodes_list = list()
 		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-		
+
 		for i in range(num_of_nodes):
 			candidate_list = list()
 			for n1 in simulate_activated_nodes:
@@ -319,7 +318,7 @@ class MyMultiPlayerLTModel():
 				for a_c in all_layer_activated_nodes:
 					if copy_g.node[a_c]['owner'] == 0:
 						enemy_activated_node = enemy_activated_node + 1
-					else:
+					elif copy_g.node[a_c]['owner'] == 1:
 						my_activated_node = my_activated_node + 1
 
 				self.reset(copy_g,try_set,affected_nodes)
@@ -327,6 +326,7 @@ class MyMultiPlayerLTModel():
 				candidate_list.append((n1, enemy_activated_node - my_activated_node))
 
 			candidate_list.sort(key = lambda x: x[1], reverse = False)
+			
 
 			simulate_activated_nodes.remove(candidate_list[0][0])
 			return_nodes_list.append(candidate_list[0][0])

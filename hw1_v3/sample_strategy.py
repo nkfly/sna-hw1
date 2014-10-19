@@ -49,6 +49,7 @@ if __name__ == '__main__':
 		# switch algorithm
 		layer_to_activated_node_list, affected_nodes = model.simulate_propagate(copy_g,enemy_select_nodes,1000)
 		all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
+		#print(len(all_layer_activated_nodes),all_layer_activated_nodes,sep='\t',end='\n')
 		#all_layer_activated_nodes = set.union(layer_to_activated_node_list[0], layer_to_activated_node_list[1],layer_to_activated_node_list[2])
 
 		#print(all_layer_activated_nodes, end='\n')
