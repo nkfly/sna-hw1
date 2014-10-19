@@ -353,6 +353,19 @@ class MyMultiPlayerLTModel():
 			return_nodes_list.append(candidate_list[i][0])
 
 		return return_nodes_list
+	def mix_heuristic(self, simulate_activated_nodes,num_of_nodes):
+		return_nodes_list=list()
+		first=self.heuristic_max_weight(simulate_activated_nodes,int(num_of_nodes/2))
+		new_g = self.get_copy_graph()
+		for n in first:
+			new_g.node[n]['status'] = 'activate'
+		second = self.DegreediscountGreedy(new_g,int(num_of_nodes/2))
+		for n in first:
+			return_nodes_list.append(n)
+		for n in second:
+			return_nodes_list.append(n)
+		return return_nodes_list
+		
 	def get_graph_nodes(self):
 		return self.g.nodes()
 	def get_selected_nodes(self):

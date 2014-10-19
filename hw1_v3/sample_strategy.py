@@ -58,12 +58,13 @@ if __name__ == '__main__':
 		if r == 1:
 			random_select_nodes = model.heuristic_greedy(all_layer_activated_nodes, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
 		else : 
-			random_select_nodes = model.heuristic_max_weight(all_layer_activated_nodes,nodes_num_per_iter)
+			random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
+		#random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
 		#random_select_nodes = model.DegreediscountGreedy(model.get_copy_graph(),nodes_num_per_iter)
 		#random_select_nodes = [random.randint(0, model.get_nodes_num()) for i in range(nodes_num_per_iter)]
 
 		# switch algorithm
-		#print(random_select_nodes, end='\n')
+		#print(random_select_nodes, end='\n',file=sys.stderr)
 		model.select_nodes(enemy_select_nodes, player_id = 0)
 		model.select_nodes(random_select_nodes, player_id = 1)
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
