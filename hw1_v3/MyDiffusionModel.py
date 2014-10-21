@@ -32,78 +32,41 @@ class MyMultiPlayerLTModel():
 
 		self.init_round()
 
-	def export(self, my_nodes_file,mode=True):
+	def export(self, my_nodes_file):
 		with open(my_nodes_file, 'w') as f:
 			print(self.inactivated_num, end='\n', file=f)
 			print(" ".join([str(n) for n in self.total_activated_nodes[0]] ), sep='\t', end='\n', file=f)
-			if mode == True:
-				print(" ".join([str(n) for n in self.total_activated_nodes[1]] ), sep='\t', end='\n', file=f)
-				for n in self.g.nodes():
-					print(n, self.g.node[n]['threshold'],self.g.node[n]['status'],self.g.node[n]['owner'],self.g.node[n]['energy'][0],self.g.node[n]['energy'][1],sep='\t',end='\n', file=f)
-			else:
-				for n in self.g.nodes():
-					#print("Nodes  "+str(self.g.node[n]['energy'][1]),file=sys.stderr)
-					print(n, self.g.node[n]['threshold'],self.g.node[n]['status'],self.g.node[n]['owner'],self.g.node[n]['energy'][0],"0.0",sep='\t',end='\n', file=f)
-	
-	def read_nodes_from_file(self,filename):
-		nodes_list = list()
-		with open(filename, 'r') as f:
-			line = f.readline()
-			entry = line.strip().split()
-			for e in entry:
-				nodes_list.append(int(e))
-		return nodes_list
+			print(" ".join([str(n) for n in self.total_activated_nodes[1]] ), sep='\t', end='\n', file=f)
+			for n in self.g.nodes():
+				print(n, self.g.node[n]['threshold'],self.g.node[n]['status'],self.g.node[n]['owner'],self.g.node[n]['energy'][0],self.g.node[n]['energy'][1],sep='\t',end='\n', file=f)
 
-	def store(self, my_nodes_file, edges_file, player_num,mode=True):
+	def store(self, my_nodes_file, edges_file, player_num):
 		self.player_num = player_num
 		self.g = None
-		if mode == True:
-			self.store_graph(my_nodes_file, edges_file)
-		else:
-			self.store_graph(my_nodes_file, edges_file,mode = False)
+		self.store_graph(my_nodes_file, edges_file)
 		self.activated_nodes = None
 		# to store the selected nodes (of all players) in one round
 		self.selected_nodes = None
 		self.init_round()
 
-	def store_graph(self, my_nodes_file, edges_file,mode=True):
-		if mode==True:
-			self.g = nx.DiGraph()
-			# read nodes file
-			with open(my_nodes_file, 'r') as f:
-				self.inactivated_num = int(f.readline().strip().split()[0])
-				self.total_activated_nodes = [ [int(n) for n in f.readline().strip().split()]  ,  [int(n) for n in f.readline().strip().split()]]
-				for line in f:
-					entry = line.strip().split('\t')
-					assert len(entry) == 6
-					n = int(entry[0])
-					t = float(entry[1])
-					s = entry[2]
-					o = entry[3]
-					e = [float(entry[4]), float(entry[5])]
-					self.g.add_node(n, threshold = t, status=s, owner=o, energy=e)
-					
-			# read edges file 
-			self.read_edge(edges_file)
-		else:
-			self.g = nx.DiGraph()
-			# read nodes file
-			with open(my_nodes_file, 'r') as f:
-				self.inactivated_num = int(f.readline().strip().split()[0])
-				for line in f:
-					if int(len(line))<2:
-						continue
-					entry = line.strip().split('\t')
-					assert len(entry) == 6
-					n = int(entry[0])
-					t = float(entry[1])
-					s = entry[2]
-					o = entry[3]
-					e = [float(entry[4]), float(entry[5])]
-					self.g.add_node(n, threshold = t, status=s, owner=o, energy=e)
-					
-			# read edges file 
-			self.read_edge(edges_file)
+	def store_graph(self, my_nodes_file, edges_file):
+		self.g = nx.DiGraph()
+		# read nodes file
+		with open(my_nodes_file, 'r') as f:
+			self.inactivated_num = int(f.readline().strip().split()[0])
+			self.total_activated_nodes = [ [int(n) for n in f.readline().strip().split()]  ,  [int(n) for n in f.readline().strip().split()]]
+			for line in f:
+				entry = line.strip().split('\t')
+				assert len(entry) == 6
+				n = int(entry[0])
+				t = float(entry[1])
+				s = entry[2]
+				o = entry[3]
+				e = [float(entry[4]), float(entry[5])]
+				self.g.add_node(n, threshold = t, status=s, owner=o, energy=e)
+				
+		# read edges file 
+		self.read_edge(edges_file)
 
 	def read_edge(self, edges_file):
 		# read edges file 
@@ -352,36 +315,35 @@ class MyMultiPlayerLTModel():
 			last_time_activated_node = candidate_list[0][1]
 			num_of_nodes = num_of_nodes - 1
 
-			if num_of_nodes == 0:
-				break
+			
+			peeking_window = 600
+			while num_of_nodes > 0:
+				i = 1
+				second_list = list()
+				while i < len(candidate_list) and i < peeking_window:
+					try_set = list(return_nodes_list)
+					try_set.append(candidate_list[i][0])
+						
+					self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-			i = 1
-			max_index = 0
-			max_value = 0
-			while i < len(candidate_list) and i < 300:
-				try_set = list(return_nodes_list)
-				try_set.append(candidate_list[i][0])
-				
-				self.simulate_select_nodes(copy_g, try_set, 1)
+					my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
+					second_list.append((candidate_list[i][0], my_activated_node))
+					
+					self.reset(copy_g,try_set,affected_nodes,untouched_g)
+					i = i + 1
+				candidate_list = second_list
+				candidate_list.sort(key = lambda x: x[1], reverse = True)
+				simulate_activated_nodes.remove(candidate_list[0][0])
+				return_nodes_list.append(candidate_list[0][0])
+				last_time_activated_node = candidate_list[0][1]
+				num_of_nodes = num_of_nodes - 1
 
-
-				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
-
-				if my_activated_node > max_value:
-					max_value = my_activated_node
-					max_index = i
-				self.reset(copy_g,try_set,affected_nodes,untouched_g)
-				i = i + 1
-
-			simulate_activated_nodes.remove(candidate_list[max_index][0])
-			return_nodes_list.append(candidate_list[max_index][0])
-			last_time_activated_node = max_value
-			num_of_nodes = num_of_nodes - 1
+				print(return_nodes_list)
+				print(last_time_activated_node)
 				
 			
-			print(return_nodes_list)
-			print(last_time_activated_node)
+			
 
 
 		return return_nodes_list
