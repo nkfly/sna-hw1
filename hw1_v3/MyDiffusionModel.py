@@ -130,25 +130,16 @@ class MyMultiPlayerLTModel():
 
 
 	def simulate_select_nodes(self, copy_g, nodes_list, player_id):
-		if type(nodes_list) is not list:
-			return None
 		
 		# since player could select invalid (status: selected/activated) nodes
 		# we create a list to store the actual selected nodes
-		actual_selected_nodes = list()
 		for n in nodes_list:
-			if not copy_g.has_node(n):
-				return None
 			if copy_g.node[n]['status'] == 'inactivated':
 				copy_g.node[n]['status'] = 'selected'
 				copy_g.node[n]['owner'] = player_id
-				actual_selected_nodes.append(n)
-		
-		
-		return actual_selected_nodes
 
 
-	def simulate_propagate(self, copy_g, selected_nodes):
+	def simulate_propagate(self, copy_g, selected_nodes, player_id):
 		visiting_nodes_set = set(selected_nodes)
 		affected_nodes = set()
 		my_activated_node = 0
@@ -167,20 +158,10 @@ class MyMultiPlayerLTModel():
 			
 			# determine the owner of the activated node
 			for n in new_activated_nodes_set:
-				max_energy = -1.0
-				for p in range(0, self.player_num):
-					energy = copy_g.node[n]['energy'][p]
-					if energy >= max_energy:
-						owner = p
-						max_energy = energy
-
-				copy_g.node[n]['owner'] = owner
+				copy_g.node[n]['owner'] = player_id
 				copy_g.node[n]['status'] = 'activated'
-
 				my_activated_node = my_activated_node + 1
 			
-			
-
 			# update the nodes set to visit
 			visiting_nodes_set = new_activated_nodes_set
 		return my_activated_node, affected_nodes
@@ -306,7 +287,7 @@ class MyMultiPlayerLTModel():
 			copy_g.node[n]['energy'][1] = untouched_g.node[n]['energy'][1]
 
 
-	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
 		
 		return_nodes_list = list()
 		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
@@ -321,7 +302,7 @@ class MyMultiPlayerLTModel():
 				self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 
 				self.reset(copy_g,try_set,affected_nodes,untouched_g)
 				candidate_list.append((n1, my_activated_node ))
@@ -348,7 +329,7 @@ class MyMultiPlayerLTModel():
 				self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 
 				if my_activated_node > max_value:
 					max_value = my_activated_node
@@ -370,7 +351,7 @@ class MyMultiPlayerLTModel():
 
 
 
-	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
 		
 		return_nodes_list = list()
 		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
@@ -385,7 +366,7 @@ class MyMultiPlayerLTModel():
 				self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 				# for a_c in layer_to_activated_node_list:
 				# 	if copy_g.node[a_c]['owner'] == 1:
 				# 		my_activated_node = my_activated_node + 1

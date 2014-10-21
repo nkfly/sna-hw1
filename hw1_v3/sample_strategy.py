@@ -61,7 +61,7 @@ if __name__ == '__main__':
 		#model.select_nodes(enemy_select_nodes, player_id = 0)
 
 		# switch algorithm
-		my_activated_node, affected_nodes = model.simulate_propagate(copy_g,enemy_select_nodes)
+		my_activated_node, affected_nodes = model.simulate_propagate(copy_g,enemy_select_nodes,0)
 
 		for n in enemy_select_nodes:
 			giant_connected_component.discard(n)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 		#random_select_nodes = model.heuristic_max_weight(all_layer_activated_nodes,nodes_num_per_iter)
 
 		if r == 1:
-			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
+			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter,player_id-1)
 			#random_select_nodes = model.heuristic_greedy(set(layer_to_activated_node_list[0]), model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
 		else : 
 			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
