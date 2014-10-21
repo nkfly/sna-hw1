@@ -72,7 +72,7 @@ if __name__ == '__main__':
 		giant_connected_component = get_giant_connected_component(copy_g)
 		#strategy phase
 		random_select_nodes = model1.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
-		print(random_select_nodes,file=sys.stderr)
+		#print(random_select_nodes,file=sys.stderr)
 		#選完後寫檔案
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
 		#輸出至我們的檔案
