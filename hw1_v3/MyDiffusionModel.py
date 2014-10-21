@@ -163,7 +163,13 @@ class MyMultiPlayerLTModel():
 				for n2 in copy_g.successors(n1):
 					if copy_g.node[n2]['status'] == 'inactivated':
 						if n2 not in affected_nodes:
-							affected_nodes[n2] = copy_g.node[n2]
+							affected_nodes[n2] = dict()
+							affected_nodes[n2]['status'] = copy_g.node[n2]['status']
+							affected_nodes[n2]['owner']	= 	copy_g.node[n2]['owner']
+							affected_nodes[n2]['threshold'] = copy_g.node[n2]['threshold']
+							affected_nodes[n2]['energy'] = dict()
+							affected_nodes[n2]['energy'][0] = copy_g.node[n2]['energy'][0]
+							affected_nodes[n2]['energy'][1] = copy_g.node[n2]['energy'][1]
 
 						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
 						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
@@ -302,21 +308,25 @@ class MyMultiPlayerLTModel():
 			copy_g.node[n]['status'] = 'inactivated'
 			copy_g.node[n]['owner'] = None
 		for n in affected_nodes:
-			copy_g.node[n] = affected_nodes[n]
+			copy_g.node[n]['status'] = affected_nodes[n]['status']
+			copy_g.node[n]['owner'] = affected_nodes[n]['owner']			
+			copy_g.node[n]['threshold'] = affected_nodes[n]['threshold']
+			copy_g.node[n]['energy'][0] = affected_nodes[n]['energy'][0]
+			copy_g.node[n]['energy'][1] = affected_nodes[n]['energy'][1]
 
 
 
 	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
 		
 		return_nodes_list = list()
-		
+		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+		last_time_activated_node = 0
 		for i in range(num_of_nodes):
 			candidate_list = list()
 			for n1 in simulate_activated_nodes:
 				try_set = list(return_nodes_list)
 				try_set.append(n1)
 				
-				self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
 				self.simulate_select_nodes(copy_g, try_set, 1)
 
 
@@ -335,6 +345,10 @@ class MyMultiPlayerLTModel():
 
 			simulate_activated_nodes.remove(candidate_list[0][0])
 			return_nodes_list.append(candidate_list[0][0])
+			last_time_activated_node = candidate_list[0][1]
+			print(return_nodes_list)
+			print(last_time_activated_node)
+
 
 		return return_nodes_list
 
