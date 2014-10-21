@@ -148,14 +148,11 @@ class MyMultiPlayerLTModel():
 		return actual_selected_nodes
 
 
-	def simulate_propagate(self, copy_g, selected_nodes,k_layer):
-		layer_to_activated_node_list = []		 
+	def simulate_propagate(self, copy_g, selected_nodes):
 		visiting_nodes_set = set(selected_nodes)
-		affected_nodes = dict()
+		affected_nodes = set()
+		my_activated_node = 0
 		while len(visiting_nodes_set) > 0:
-			k_layer = k_layer -1
-			if k_layer < 0 :
-				break
 			new_activated_nodes_set = set()
 			# propagate the influence
 			for n1 in visiting_nodes_set:
@@ -163,14 +160,7 @@ class MyMultiPlayerLTModel():
 				for n2 in copy_g.successors(n1):
 					if copy_g.node[n2]['status'] == 'inactivated':
 						if n2 not in affected_nodes:
-							affected_nodes[n2] = dict()
-							affected_nodes[n2]['status'] = copy_g.node[n2]['status']
-							affected_nodes[n2]['owner']	= 	copy_g.node[n2]['owner']
-							affected_nodes[n2]['threshold'] = copy_g.node[n2]['threshold']
-							affected_nodes[n2]['energy'] = dict()
-							affected_nodes[n2]['energy'][0] = copy_g.node[n2]['energy'][0]
-							affected_nodes[n2]['energy'][1] = copy_g.node[n2]['energy'][1]
-
+							affected_nodes.add(n2)
 						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
 						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
 							new_activated_nodes_set.add(n2)
@@ -186,13 +176,14 @@ class MyMultiPlayerLTModel():
 
 				copy_g.node[n]['owner'] = owner
 				copy_g.node[n]['status'] = 'activated'
+
+				my_activated_node = my_activated_node + 1
 			
 			
 
 			# update the nodes set to visit
 			visiting_nodes_set = new_activated_nodes_set
-			layer_to_activated_node_list.append(new_activated_nodes_set)
-		return layer_to_activated_node_list, affected_nodes
+		return my_activated_node, affected_nodes
 
 	# propagate this round
 	def propagate(self):
@@ -303,16 +294,79 @@ class MyMultiPlayerLTModel():
 		return list
 
 
-	def reset(self,copy_g, select_nodes, affected_nodes):
+	def reset(self,copy_g, select_nodes, affected_nodes, untouched_g):
 		for n in select_nodes:
 			copy_g.node[n]['status'] = 'inactivated'
 			copy_g.node[n]['owner'] = None
 		for n in affected_nodes:
-			copy_g.node[n]['status'] = affected_nodes[n]['status']
-			copy_g.node[n]['owner'] = affected_nodes[n]['owner']			
-			copy_g.node[n]['threshold'] = affected_nodes[n]['threshold']
-			copy_g.node[n]['energy'][0] = affected_nodes[n]['energy'][0]
-			copy_g.node[n]['energy'][1] = affected_nodes[n]['energy'][1]
+			copy_g.node[n]['status'] = untouched_g.node[n]['status']
+			copy_g.node[n]['owner'] = untouched_g.node[n]['owner']			
+			copy_g.node[n]['threshold'] = untouched_g.node[n]['threshold']
+			copy_g.node[n]['energy'][0] = untouched_g.node[n]['energy'][0]
+			copy_g.node[n]['energy'][1] = untouched_g.node[n]['energy'][1]
+
+
+	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+		
+		return_nodes_list = list()
+		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+		last_time_activated_node = 0
+		untouched_g = copy_g.copy()
+		while num_of_nodes > 0:
+			candidate_list = list()
+			for n1 in simulate_activated_nodes:
+				try_set = list(return_nodes_list)
+				try_set.append(n1)
+				
+				self.simulate_select_nodes(copy_g, try_set, 1)
+
+
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+
+				self.reset(copy_g,try_set,affected_nodes,untouched_g)
+				candidate_list.append((n1, my_activated_node ))
+
+
+			candidate_list.sort(key = lambda x: x[1], reverse = True)
+
+			simulate_activated_nodes.remove(candidate_list[0][0])
+			return_nodes_list.append(candidate_list[0][0])
+			last_time_activated_node = candidate_list[0][1]
+			num_of_nodes = num_of_nodes - 1
+
+			if num_of_nodes == 0:
+				break
+
+
+			i = 1
+			max_index = 0
+			max_value = 0
+			while i < len(candidate_list) and i < 300:
+				try_set = list(return_nodes_list)
+				try_set.append(candidate_list[i][0])
+				
+				self.simulate_select_nodes(copy_g, try_set, 1)
+
+
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+
+				if my_activated_node > max_value:
+					max_value = my_activated_node
+					max_index = i
+				self.reset(copy_g,try_set,affected_nodes,untouched_g)
+				i = i + 1
+
+			simulate_activated_nodes.remove(candidate_list[max_index][0])
+			return_nodes_list.append(candidate_list[max_index][0])
+			last_time_activated_node = max_value
+			num_of_nodes = num_of_nodes - 1
+				
+			
+			print(return_nodes_list)
+			print(last_time_activated_node)
+
+
+		return return_nodes_list
 
 
 
@@ -321,6 +375,7 @@ class MyMultiPlayerLTModel():
 		return_nodes_list = list()
 		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
 		last_time_activated_node = 0
+		untouched_g = copy_g.copy()
 		for i in range(num_of_nodes):
 			candidate_list = list()
 			for n1 in simulate_activated_nodes:
@@ -330,18 +385,16 @@ class MyMultiPlayerLTModel():
 				self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-				layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set,1000)
-				all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
-				my_activated_node = 0
-				for a_c in all_layer_activated_nodes:
-					if copy_g.node[a_c]['owner'] == 1:
-						my_activated_node = my_activated_node + 1
+				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set)
+				# for a_c in layer_to_activated_node_list:
+				# 	if copy_g.node[a_c]['owner'] == 1:
+				# 		my_activated_node = my_activated_node + 1
 
-				self.reset(copy_g,try_set,affected_nodes)
+				self.reset(copy_g,try_set,affected_nodes,untouched_g)
 				candidate_list.append((n1, my_activated_node ))
 
 
-			candidate_list.sort(key = lambda x: x[1], reverse = True)
+			candidate_list.sort(key = lambda x: x[1], reverse = False)
 
 			simulate_activated_nodes.remove(candidate_list[0][0])
 			return_nodes_list.append(candidate_list[0][0])
@@ -398,38 +451,37 @@ class MyMultiPlayerLTModel():
 		return self.selected_nodes
 
 
-	def heuristic_greedy_c2(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
+	# def heuristic_greedy_c2(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes):
 		
-		return_nodes_list = list()
-		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-		for i in range(int(num_of_nodes/2)):
-			candidate_list = list()
-			for n1 in simulate_activated_nodes:
-				for n2 in simulate_activated_nodes:
-					if n2 < n1:
-						continue
+	# 	return_nodes_list = list()
+	# 	self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+	# 	for i in range(int(num_of_nodes/2)):
+	# 		candidate_list = list()
+	# 		for n1 in simulate_activated_nodes:
+	# 			for n2 in simulate_activated_nodes:
+	# 				if n2 < n1:
+	# 					continue
 
-					try_set = list(return_nodes_list)
-					try_set.append(n1)
-					try_set.append(n2)
+	# 				try_set = list(return_nodes_list)
+	# 				try_set.append(n1)
+	# 				try_set.append(n2)
 					
-					self.simulate_select_nodes(copy_g, try_set, 1)
+	# 				self.simulate_select_nodes(copy_g, try_set, 1)
 
-					layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set,1000)
-					all_layer_activated_nodes = set.union(*(layer_to_activated_node_list))
-					my_activated_node = 0
-					for a_c in all_layer_activated_nodes:
-						if copy_g.node[a_c]['owner'] == 1:
-							my_activated_node = my_activated_node + 1
+	# 				layer_to_activated_node_list, affected_nodes = self.simulate_propagate(copy_g,try_set)
+	# 				my_activated_node = 0
+	# 				for a_c in layer_to_activated_node_list:
+	# 					if copy_g.node[a_c]['owner'] == 1:
+	# 						my_activated_node = my_activated_node + 1
 
-					self.reset(copy_g,try_set,affected_nodes)
-					candidate_list.append(((n1,n2), my_activated_node ))
+	# 				self.reset(copy_g,try_set,affected_nodes)
+	# 				candidate_list.append(((n1,n2), my_activated_node ))
 
-			candidate_list.sort(key = lambda x: x[1], reverse = True)
+	# 		candidate_list.sort(key = lambda x: x[1], reverse = True)
 
-			simulate_activated_nodes.remove(candidate_list[0][0][0])
-			simulate_activated_nodes.remove(candidate_list[0][0][1])
-			return_nodes_list.append(candidate_list[0][0][0])
-			return_nodes_list.append(candidate_list[0][0][1])
+	# 		simulate_activated_nodes.remove(candidate_list[0][0][0])
+	# 		simulate_activated_nodes.remove(candidate_list[0][0][1])
+	# 		return_nodes_list.append(candidate_list[0][0][0])
+	# 		return_nodes_list.append(candidate_list[0][0][1])
 
-		return return_nodes_list
+	# 	return return_nodes_list
