@@ -44,7 +44,43 @@ if __name__ == '__main__':
 	selected_nodes_file = sys.argv[6]
 	time_limit_in_sec = sys.argv[7]
 	if player_id == 1:
-		print(player_id)
+		propagate=True #判定是否是第一回
+		try:
+			r, enemy_select_nodes = get_round_and_enemy_latestest_select_nodes(player_id,status_file) #嘗試讀檔失敗表示是第一回
+		except:
+			propagate = False
+		model1 = MyDiffusionModel.MyMultiPlayerLTModel()#把 model 叫起來
+		if propagate == True and int(r)>2: #r!=1
+			nodes_list=model1.read_nodes_from_file('first_time_select.txt')
+			model1.store('text1.txt', edges_file, player_num = 2) #表示我們是 player1 要讀圖
+			model1.select_nodes(nodes_list, player_id = 0)
+			model1.select_nodes(enemy_select_nodes, player_id = 1) #這邊是圖裡面自訂的 player id = 1 表示 player 2
+			model1.propagate()
+			model1.remove_activated_nodes()
+		elif r==1:#r==1
+			model1.original_init(nodes_file, edges_file, player_num = 2) #第一次啟用
+			enemy_select_nodes=list()
+		else: #r=2
+			nodes_list=model1.read_nodes_from_file('first_time_select.txt')
+			model1.original_init(nodes_file, edges_file, player_num = 2) #表示我們是 player1 要讀圖
+			model1.select_nodes(nodes_list, player_id = 0)
+			model1.select_nodes(enemy_select_nodes, player_id = 1) #這邊是圖裡面自訂的 player id = 1 表示 player 2
+			model1.propagate()
+			model1.remove_activated_nodes()
+		#maintain giant component
+		copy_g = model1.get_copy_graph()
+		giant_connected_component = get_giant_connected_component(copy_g)
+		#strategy phase
+		random_select_nodes = model1.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
+		print(random_select_nodes,file=sys.stderr)
+		#選完後寫檔案
+		write_selected_nodes('selected_nodes.txt', random_select_nodes)
+		#輸出至我們的檔案
+		if propagate == True and int(r)!=1:
+			model1.export('text1.txt',mode=True)
+			write_selected_nodes('first_time_select.txt', random_select_nodes)
+		else:
+			write_selected_nodes('first_time_select.txt', random_select_nodes)
 	else :
 		r, enemy_select_nodes = get_round_and_enemy_latestest_select_nodes(player_id,status_file)
 
@@ -74,8 +110,9 @@ if __name__ == '__main__':
 		#random_select_nodes = model.heuristic_max_weight(all_layer_activated_nodes,nodes_num_per_iter)
 
 		if r == 1:
-			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
+			#random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
 			#random_select_nodes = model.heuristic_greedy(set(layer_to_activated_node_list[0]), model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter)
+			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
 		else : 
 			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
 		#random_select_nodes = model.mix_heuristic(all_layer_activated_nodes,nodes_num_per_iter)
