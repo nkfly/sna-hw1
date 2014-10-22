@@ -71,7 +71,10 @@ if __name__ == '__main__':
 		copy_g = model1.get_copy_graph()
 		giant_connected_component = get_giant_connected_component(copy_g)
 		#strategy phase
-		random_select_nodes = model1.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
+		if propagate == True and int(r)!=1:
+			random_select_nodes = model1.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
+		else:
+			random_select_nodes = model1.heuristic_greedy_lazy(giant_connected_component,copy_g,enemy_select_nodes,nodes_num_per_iter,player_id-1)
 		#print(random_select_nodes,file=sys.stderr)
 		#選完後寫檔案
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
