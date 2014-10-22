@@ -80,7 +80,7 @@ if __name__ == '__main__':
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
 		#輸出至我們的檔案
 		if propagate == True and int(r)!=1:
-			model1.export('text1.txt',mode=True)
+			model1.export('text1.txt')
 			write_selected_nodes('first_time_select.txt', random_select_nodes)
 		else:
 			write_selected_nodes('first_time_select.txt', random_select_nodes)
