@@ -304,15 +304,14 @@ class MyMultiPlayerLTModel():
 		return untouched_nodes
 
 
-	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
+	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id,untouched_nodes):
 
 		return_nodes_list = list()
 		if player_id == 0:
 			self.simulate_select_nodes(copy_g, enemy_selected_nodes, 1)
 		elif player_id == 1:
 			self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-
-		untouched_nodes = self.get_untouched_nodes(copy_g)
+		
 		node_num_in_return_nodes_list = 0
 		while node_num_in_return_nodes_list < num_of_nodes:
 			candidate_list = list()

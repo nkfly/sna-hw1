@@ -95,32 +95,29 @@ if __name__ == '__main__':
 
 
 		copy_g = model.get_copy_graph()
-		giant_connected_component = get_giant_connected_component(copy_g)
+		untouched_nodes = model.get_untouched_nodes(copy_g)
 		
 		
 		model.simulate_select_nodes(copy_g,enemy_select_nodes, player_id = 0)
 		my_activated_node, affected_nodes = model.simulate_propagate(copy_g,enemy_select_nodes,0)
+		model.reset(copy_g, enemy_select_nodes, affected_nodes, untouched_nodes)
 		
 
 		# switch algorithm
-		
-
+		giant_connected_component = get_giant_connected_component(copy_g)
 		for n in enemy_select_nodes:
-			giant_connected_component.discard(n)		
+			giant_connected_component.discard(n)
 
 		if r == 1:
-			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter,player_id-1)
-
+			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter,player_id-1, untouched_nodes)
 		else : 
 			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
 		
-		model.select_nodes(enemy_select_nodes, player_id = 0)
-		model.select_nodes(random_select_nodes, player_id = 1)
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
 
-		
-
+		model.select_nodes(enemy_select_nodes, player_id = 0)
+		model.select_nodes(random_select_nodes, player_id = 1)
 		model.propagate()
 		model.remove_activated_nodes()
 		model.export('text.txt')
-		
+
