@@ -358,40 +358,40 @@ class MyMultiPlayerLTModel():
 
 
 
-	def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
+	# def heuristic_greedy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
 		
-		return_nodes_list = list()
-		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-		last_time_activated_node = 0
-		untouched_g = copy_g.copy()
-		for i in range(num_of_nodes):
-			candidate_list = list()
-			for n1 in simulate_activated_nodes:
-				try_set = list(return_nodes_list)
-				try_set.append(n1)
+	# 	return_nodes_list = list()
+	# 	self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+	# 	last_time_activated_node = 0
+	# 	untouched_g = copy_g.copy()
+	# 	for i in range(num_of_nodes):
+	# 		candidate_list = list()
+	# 		for n1 in simulate_activated_nodes:
+	# 			try_set = list(return_nodes_list)
+	# 			try_set.append(n1)
 				
-				self.simulate_select_nodes(copy_g, try_set, 1)
+	# 			self.simulate_select_nodes(copy_g, try_set, 1)
 
 
-				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
-				# for a_c in layer_to_activated_node_list:
-				# 	if copy_g.node[a_c]['owner'] == 1:
-				# 		my_activated_node = my_activated_node + 1
+	# 			my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
+	# 			# for a_c in layer_to_activated_node_list:
+	# 			# 	if copy_g.node[a_c]['owner'] == 1:
+	# 			# 		my_activated_node = my_activated_node + 1
 
-				self.reset(copy_g,try_set,affected_nodes,untouched_g)
-				candidate_list.append((n1, my_activated_node ))
-
-
-			candidate_list.sort(key = lambda x: x[1], reverse = False)
-
-			simulate_activated_nodes.remove(candidate_list[0][0])
-			return_nodes_list.append(candidate_list[0][0])
-			last_time_activated_node = candidate_list[0][1]
-			print(return_nodes_list)
-			print(last_time_activated_node)
+	# 			self.reset(copy_g,try_set,affected_nodes,untouched_g)
+	# 			candidate_list.append((n1, my_activated_node ))
 
 
-		return return_nodes_list
+	# 		candidate_list.sort(key = lambda x: x[1], reverse = False)
+
+	# 		simulate_activated_nodes.remove(candidate_list[0][0])
+	# 		return_nodes_list.append(candidate_list[0][0])
+	# 		last_time_activated_node = candidate_list[0][1]
+	# 		print(return_nodes_list)
+	# 		print(last_time_activated_node)
+
+
+	# 	return return_nodes_list
 
 	def heuristic_max_weight(self, simulate_activated_nodes, num_of_nodes):
 		candidate_list = list()
