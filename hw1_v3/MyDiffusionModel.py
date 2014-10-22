@@ -147,13 +147,12 @@ class MyMultiPlayerLTModel():
 			new_activated_nodes_set = set()
 			# propagate the influence
 			for n1 in visiting_nodes_set:
-				owner = copy_g.node[n1]['owner']
 				for n2 in copy_g.successors(n1):
 					if copy_g.node[n2]['status'] == 'inactivated':
 						if n2 not in affected_nodes:
 							affected_nodes.add(n2)
-						copy_g.node[n2]['energy'][owner] += copy_g.edge[n1][n2]['influence']
-						if copy_g.node[n2]['energy'][owner] >= copy_g.node[n2]['threshold']:
+						copy_g.node[n2]['energy'][player_id] += copy_g.edge[n1][n2]['influence']
+						if copy_g.node[n2]['energy'][player_id] >= copy_g.node[n2]['threshold']:
 							new_activated_nodes_set.add(n2)
 			
 			# determine the owner of the activated node
@@ -275,75 +274,85 @@ class MyMultiPlayerLTModel():
 		return list
 
 
-	def reset(self,copy_g, select_nodes, affected_nodes, untouched_g):
+	def reset(self,copy_g, select_nodes, affected_nodes, untouched_nodes):
 		for n in select_nodes:
 			copy_g.node[n]['status'] = 'inactivated'
 			copy_g.node[n]['owner'] = None
 		for n in affected_nodes:
-			copy_g.node[n]['status'] = untouched_g.node[n]['status']
-			copy_g.node[n]['owner'] = untouched_g.node[n]['owner']			
-			copy_g.node[n]['threshold'] = untouched_g.node[n]['threshold']
-			copy_g.node[n]['energy'][0] = untouched_g.node[n]['energy'][0]
-			copy_g.node[n]['energy'][1] = untouched_g.node[n]['energy'][1]
+			copy_g.node[n]['status'] = untouched_nodes[n]['status']
+			copy_g.node[n]['owner'] = untouched_nodes[n]['owner']			
+			copy_g.node[n]['threshold'] = untouched_nodes[n]['threshold']
+			copy_g.node[n]['energy'][0] = untouched_nodes[n]['energy'][0]
+			copy_g.node[n]['energy'][1] = untouched_nodes[n]['energy'][1]
+
+	def get_untouched_nodes(self, copy_g):
+		untouched_nodes = dict()
+		for n in copy_g.nodes():
+			untouched_nodes[n] = dict()
+			untouched_nodes[n]['status'] = copy_g.node[n]['status']
+			untouched_nodes[n]['owner'] = copy_g.node[n]['owner']			
+			untouched_nodes[n]['threshold'] = copy_g.node[n]['threshold']
+			untouched_nodes[n]['energy'] = [copy_g.node[n]['energy'][0], copy_g.node[n]['energy'][1]]
+		return untouched_nodes
 
 
 	def heuristic_greedy_lazy(self, simulate_activated_nodes, copy_g,enemy_selected_nodes,num_of_nodes, player_id):
-		
-		return_nodes_list = list()
-		self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
-		last_time_activated_node = 0
-		untouched_g = copy_g.copy()
-		while num_of_nodes > 0:
-			candidate_list = list()
-			for n1 in simulate_activated_nodes:
-				try_set = list(return_nodes_list)
-				try_set.append(n1)
-				
-				self.simulate_select_nodes(copy_g, try_set, 1)
 
+		return_nodes_list = list()
+		if player_id == 0:
+			self.simulate_select_nodes(copy_g, enemy_selected_nodes, 1)
+		elif player_id == 1:
+			self.simulate_select_nodes(copy_g, enemy_selected_nodes, 0)
+
+		untouched_nodes = self.get_untouched_nodes(copy_g)
+		node_num_in_return_nodes_list = 0
+		while node_num_in_return_nodes_list < num_of_nodes:
+			candidate_list = list()
+			try_set = [-1] # this is garbage -1
+			for n1 in simulate_activated_nodes:
+				try_set[node_num_in_return_nodes_list] = n1
+				
+				self.simulate_select_nodes(copy_g, [n1], player_id)
 
 				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 
-				self.reset(copy_g,try_set,affected_nodes,untouched_g)
+				self.reset(copy_g,[n1],affected_nodes,untouched_nodes)
 				candidate_list.append((n1, my_activated_node ))
 
 
 			candidate_list.sort(key = lambda x: x[1], reverse = True)
 
-			simulate_activated_nodes.remove(candidate_list[0][0])
+			
 			return_nodes_list.append(candidate_list[0][0])
-			last_time_activated_node = candidate_list[0][1]
-			num_of_nodes = num_of_nodes - 1
+			self.simulate_select_nodes(copy_g, [candidate_list[0][0]], player_id)
+			node_num_in_return_nodes_list = node_num_in_return_nodes_list + 1
 
 			
 			peeking_window = 600
-			while num_of_nodes > 0:
+			while node_num_in_return_nodes_list < num_of_nodes:
 				i = 1
 				second_list = list()
+				try_set = list(return_nodes_list)
+				try_set.append(-1)# this is garbage -1
 				while i < len(candidate_list) and i < peeking_window:
-					try_set = list(return_nodes_list)
-					try_set.append(candidate_list[i][0])
+					try_set[node_num_in_return_nodes_list] = candidate_list[i][0]
 						
-					self.simulate_select_nodes(copy_g, try_set, 1)
-
+					self.simulate_select_nodes(copy_g, [candidate_list[i][0]], player_id)
 
 					my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 					second_list.append((candidate_list[i][0], my_activated_node))
 					
-					self.reset(copy_g,try_set,affected_nodes,untouched_g)
+					self.reset(copy_g,[candidate_list[i][0]],affected_nodes,untouched_nodes)
 					i = i + 1
 				candidate_list = second_list
-				candidate_list.sort(key = lambda x: x[1], reverse = True)
-				simulate_activated_nodes.remove(candidate_list[0][0])
+				candidate_list.sort(key = lambda x: x[1], reverse = True)				
 				return_nodes_list.append(candidate_list[0][0])
-				last_time_activated_node = candidate_list[0][1]
-				num_of_nodes = num_of_nodes - 1
+				self.simulate_select_nodes(copy_g, [candidate_list[0][0]], player_id)
+				node_num_in_return_nodes_list = node_num_in_return_nodes_list + 1
 
 				print(return_nodes_list)
-				print(last_time_activated_node)
+				print(candidate_list[0][1])
 				
-			
-			
 
 
 		return return_nodes_list
