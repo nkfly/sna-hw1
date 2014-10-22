@@ -359,8 +359,6 @@ class MyMultiPlayerLTModel():
 				self.simulate_select_nodes(copy_g, [candidate_list[0][0]], player_id)
 				node_num_in_return_nodes_list = node_num_in_return_nodes_list + 1
 
-				print(return_nodes_list)
-				print(candidate_list[0][1])
 				
 
 
