@@ -110,9 +110,14 @@ if __name__ == '__main__':
 			giant_connected_component.discard(n)
 
 		if r == 1:
+			#print("First Round",end='\n',file=sys.stderr)
 			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,nodes_num_per_iter,player_id-1, untouched_nodes)
-		else : 
-			random_select_nodes = model.mix_heuristic(enemy_select_nodes,giant_connected_component,nodes_num_per_iter)
+		else :
+			#print("Other Round",end='\n',file=sys.stderr)
+			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,int(nodes_num_per_iter/2),player_id-1, untouched_nodes)
+			first=model.heuristic_max_weight(giant_connected_component,int(nodes_num_per_iter/2))
+			for n in first:
+				random_select_nodes.append(n)
 		
 		write_selected_nodes('selected_nodes.txt', random_select_nodes)
 
