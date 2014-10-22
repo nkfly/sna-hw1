@@ -324,7 +324,7 @@ class MyMultiPlayerLTModel():
 				my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
 
 				self.reset(copy_g,[n1],affected_nodes,untouched_nodes)
-				candidate_list.append((n1, my_activated_node ))
+				candidate_list.append([n1, my_activated_node ])
 
 
 			candidate_list.sort(key = lambda x: x[1], reverse = True)
@@ -338,7 +338,7 @@ class MyMultiPlayerLTModel():
 			peeking_window = 600
 			while node_num_in_return_nodes_list < num_of_nodes:
 				i = 1
-				second_list = list()
+				#second_list = list()
 				try_set = list(return_nodes_list)
 				try_set.append(-1)# this is garbage -1
 				while i < len(candidate_list) and i < peeking_window:
@@ -347,11 +347,13 @@ class MyMultiPlayerLTModel():
 					self.simulate_select_nodes(copy_g, [candidate_list[i][0]], player_id)
 
 					my_activated_node, affected_nodes = self.simulate_propagate(copy_g,try_set, player_id)
-					second_list.append((candidate_list[i][0], my_activated_node))
+					#second_list.append([candidate_list[i][0], my_activated_node])
+					candidate_list[i][1] = my_activated_node
 					
 					self.reset(copy_g,[candidate_list[i][0]],affected_nodes,untouched_nodes)
 					i = i + 1
-				candidate_list = second_list
+				#candidate_list = second_list
+				candidate_list = candidate_list[1:i]
 				candidate_list.sort(key = lambda x: x[1], reverse = True)				
 				return_nodes_list.append(candidate_list[0][0])
 				self.simulate_select_nodes(copy_g, [candidate_list[0][0]], player_id)
