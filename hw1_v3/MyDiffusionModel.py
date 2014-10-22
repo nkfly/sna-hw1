@@ -149,8 +149,7 @@ class MyMultiPlayerLTModel():
 			for n1 in visiting_nodes_set:
 				for n2 in copy_g.successors(n1):
 					if copy_g.node[n2]['status'] == 'inactivated':
-						if n2 not in affected_nodes:
-							affected_nodes.add(n2)
+						affected_nodes.add(n2)
 						copy_g.node[n2]['energy'][player_id] += copy_g.edge[n1][n2]['influence']
 						if copy_g.node[n2]['energy'][player_id] >= copy_g.node[n2]['threshold']:
 							new_activated_nodes_set.add(n2)
