@@ -74,8 +74,8 @@ if __name__ == '__main__':
 		#strategy phase
 		if propagate == True and int(r)!=1:
 			#print("Other Round",end='\n',file=sys.stderr)
-			random_select_nodes = model.heuristic_greedy_lazy(giant_connected_component, model.get_copy_graph(),enemy_select_nodes,int(nodes_num_per_iter/2),player_id-1, untouched_nodes)
-			first=model.heuristic_max_weight(giant_connected_component,int(nodes_num_per_iter/2))
+			random_select_nodes = model1.heuristic_greedy_lazy(giant_connected_component, copy_g,enemy_select_nodes,int(nodes_num_per_iter/2),player_id-1, untouched_nodes)
+			first=model1.heuristic_max_weight(giant_connected_component,int(nodes_num_per_iter/2))
 			for n in first:
 				random_select_nodes.append(n)
 		else:
