@@ -31,7 +31,16 @@ class MyMultiPlayerLTModel():
 		self.selected_nodes = None
 
 		self.init_round()
-
+	
+	def read_nodes_from_file(self,filename):
+		nodes_list = list()
+		with open(filename, 'r') as f:
+			line = f.readline()
+			entry = line.strip().split()
+			for e in entry:
+				nodes_list.append(int(e))
+		return nodes_list
+	
 	def export(self, my_nodes_file):
 		with open(my_nodes_file, 'w') as f:
 			print(self.inactivated_num, end='\n', file=f)
